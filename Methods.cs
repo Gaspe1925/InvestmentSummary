@@ -13,6 +13,8 @@ public static class Methods
     private const string Reverse = "REVERSE";
     private const string Dividends = "DIV";
     private const string Interest = "INT";
+    private const string Exchange = "EXCHANGE";
+    private const string Transfer = "TRANSFER";
 
     public static string[] GetFiles()
     {
@@ -48,7 +50,9 @@ public static class Methods
 
                 bool isContribution = (type == Contribution ||type == Withdrawal);
                 bool isPayout = (type == Dividends || type == Interest);
-                if (isContribution || isPayout)
+                bool isExchange = (type == Exchange);
+                bool isTransfer = (type == Transfer);
+                if (isContribution || isPayout || isExchange || isTransfer)
                 {
                     columns[3] = "0"; // quantity
                 }
@@ -71,8 +75,10 @@ public static class Methods
                         {Sell},
                         {Dividends},
                         {Interest},
-                        {Split} or,
-                        {Reverse}
+                        {Split},
+                        {Reverse},
+                        {Exchange} or,
+                        {Transfer}
                     """";
                     throw new Exception(e);
                 }

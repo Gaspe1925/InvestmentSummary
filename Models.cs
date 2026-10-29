@@ -42,9 +42,9 @@ public class Holding
 public record Transaction
 {
     public DateTime Date { get; init; }
-    public string Type { get; init; }   // Buy, Sell, Contribution, Withdrawal, Split
-    public string Name { get; set; }
+    public string Type { get; init; } = "";   // Buy, Sell, Contribution, Withdrawal, Split
+    public string Name { get; set; } = "";
     public int Quantity { get; init; }
     public decimal Amount { get; init; } // Total value of transaction
-    public string Currency { get; set; }
+    public string Currency { get; set; } = "";
 }
