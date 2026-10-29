@@ -1,0 +1,8 @@
+Date,Transaction,Stock,Quantity,Total Value,Currency
+2026-10-01,cont,,,500,CAD,
+2026-10-01,buy,tmp,100,500,CAD,
+2026-10-10,sell,tmp,50,300,CAD,
+2026-10-10,div,tmp,,10,CAD,
+2026-10-10,Withdraw,,,10,CAD,
+2026-10-11,split,tmp,4,,CAD,
+2026-10-12,reverse,tmp,2,,CAD,
