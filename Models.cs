@@ -3,6 +3,7 @@
 // Portfolio holds investments by currency
 public class Portfolio
 {
+    public string Name { get; set; } = "";
     public Dictionary<string, Investment> InvestmentByCurrency = new Dictionary<string, Investment>();
 }
 

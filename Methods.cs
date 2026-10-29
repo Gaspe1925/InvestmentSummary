@@ -15,6 +15,9 @@ public static class Methods
     private const string Interest = "INT";
     private const string Exchange = "EXCHANGE";
     private const string Transfer = "TRANSFER";
+    private const int WidthLabel = 15;
+    private const int WidthDecimal = 12;
+
 
     public static string[] GetFiles()
     {
@@ -45,10 +48,10 @@ public static class Methods
                 rowCount++;
                 string[] columns = row.Split(",");
 
-                type= columns[1].ToUpper().Trim();
+                type = columns[1].ToUpper().Trim();
 
 
-                bool isContribution = (type == Contribution ||type == Withdrawal);
+                bool isContribution = (type == Contribution || type == Withdrawal);
                 bool isPayout = (type == Dividends || type == Interest);
                 bool isExchange = (type == Exchange);
                 bool isTransfer = (type == Transfer);
@@ -64,7 +67,7 @@ public static class Methods
                 }
 
                 bool isPurchase = (type == Buy || type == Sell);
-                if((isContribution || isPurchase || isPayout ||isSplit) == false)
+                if ((isContribution || isPurchase || isPayout || isSplit) == false)
                 {
                     string e = $""""
                         unrecongnized type {type}
@@ -92,10 +95,12 @@ public static class Methods
                     Amount = ParseDecimal(columns[4], path, rowCount),
                     Currency = columns[5].ToUpper().TrimEnd()
                 };
-                try{
+                try
+                {
 
                     ProcessTransaction(portfolio, transaction, path, rowCount);
-                }catch( Exception e)
+                }
+                catch (Exception e)
                 {
                     Console.Clear();
                     Console.WriteLine(transaction);
@@ -106,6 +111,7 @@ public static class Methods
 
         }
 
+        portfolio.Name = path.Split("/")[1].Replace(".csv", "");
         return portfolio;
     }
 
@@ -247,5 +253,94 @@ public static class Methods
         }
         Console.WriteLine(result);
 
+    }
+
+    public static void WritePortfolios(List<Portfolio> portfolios)
+    {
+        foreach(var portfolio in portfolios)
+        {
+            WriteCharacters('*', 50);
+            Console.WriteLine($"    {portfolio.Name.ToUpper()}");
+            WriteCharacters('*', 50);
+            Console.WriteLine();
+
+            WritePortfolio(portfolio);
+        }
+    }
+
+    private static void WritePortfolio(Portfolio portfolio)
+    {
+
+        string output = "";
+        foreach (var investment in portfolio.InvestmentByCurrency)
+        {
+            WriteCharacters('=', 50);
+            Console.WriteLine($"    Currency {investment.Key}");
+            WriteCharacters('=', 50);
+
+            decimal deposits = investment.Value.Contributions.Sum(x => x.Value.Deposit);
+            decimal withdrwals = investment.Value.Contributions.Sum(x => x.Value.Withdrawal);
+            decimal netDeposits = deposits - withdrwals;
+            decimal cash = investment.Value.Cash;
+            decimal profits = investment.Value.Holdings.Sum(x => x.Value.SalesProfit);
+            decimal payouts = investment.Value.Holdings.Sum(x => x.Value.Payout);
+            decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
+
+            int widthLabel = 15;
+            int widthDecimal = 12;
+
+            output = "    {0} {1}";
+            Console.WriteLine(output, WriteLabel("Deposits", widthLabel), WriteDecimal(deposits, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Withdrawal", widthLabel), WriteDecimal(withdrwals, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Net Deposits", widthLabel), WriteDecimal(netDeposits, widthDecimal));
+            Console.WriteLine();
+
+            Console.WriteLine(output, WriteLabel("Payouts", widthLabel),WriteDecimal(payouts, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Profits", widthLabel), WriteDecimal(profits, widthDecimal));
+            Console.WriteLine();
+
+            Console.WriteLine(output, WriteLabel("Book Value", widthLabel), WriteDecimal(bookValue, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Cash", widthLabel), WriteDecimal(cash, widthDecimal));
+
+
+        }
+    }
+
+    private static void WriteHoldings(Holding holding)
+    {
+
+    }
+
+    private static string WriteDecimal(decimal value, int width)
+    {
+        char[] result = new char[width];
+        string valueAsString = value.ToString("N2");
+        int difference = width - valueAsString.Length;
+
+        for (int i = valueAsString.Length - 1; i > -1; i--)
+        {
+            result[i + difference] = valueAsString[i];
+        }
+
+        for(int i = 0; i < difference; i++)
+        {
+            result[i] = ' ';
+        }
+
+        return new string(result);
+    }
+
+    private static string WriteLabel(string value, int width)
+    {
+        char[] result = new char[width];
+        for (int i = 0; i < value.Length; i++)
+        {
+            result[i] = value[i];
+        }
+        for(int i = value.Length; i < width; i ++)
+        {
+            result[i] = ' ';
+        }
+        return new string(result);
     }
 }

@@ -6,3 +6,4 @@ Date,Transaction,Stock,Quantity,Total Value,Currency
 2026-10-10,Withdraw,,,10,CAD,
 2026-10-11,split,tmp,4,,CAD,
 2026-10-12,reverse,tmp,2,,CAD,
+2026-10-13,cont,,,1000,CAD,
