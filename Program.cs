@@ -3,19 +3,21 @@ using InvestmentViewer;
 
 Console.Clear();
 string[] files = Methods.GetFiles();
-List<Portfolio> portfolios = new List<Portfolio>();
-portfolios.Add(Methods.GetPortfolio(files[0]));
+Task<Portfolio>[] tasks = new Task<Portfolio>[files.Length];
 
-// foreach (var v in portfolio.InvestmentByCurrency)
-// {
-//     Methods.WriteCharacters('=', 20);
-//     Console.WriteLine($"Currency {v.Key} Cash {v.Value.Cash}");
-//     Methods.WriteCharacters('-', 20);
+if(files.Length == 0)
+{
+    Console.WriteLine("No Files Found");
+    return;
+}
 
-//     foreach (var u in v.Value.Holdings)
-//     {
-//         Console.WriteLine($"{u.Key} quantity {u.Value.Quantity} book value {u.Value.CostTotal} dividends {u.Value.Payout} profits {u.Value.SalesProfit}");
-//     }
-// }
+for (int i = 0; i < files.Length; i++)
+{
+    int index = i;
+    tasks[i] = Task.Run<Portfolio>(() =>{
+        return Methods.GetPortfolio(files[index]);
+    });
+}
 
-Methods.WritePortfolios(portfolios);
+
+Methods.WritePortfolios(await Task.WhenAll(tasks));

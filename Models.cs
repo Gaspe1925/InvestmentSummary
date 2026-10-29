@@ -13,6 +13,7 @@ public class Portfolio
 public class Investment
 {
     public decimal Cash { get; set; }
+    public decimal Exchange { get; set; }
     public Dictionary<int, Contribution> Contributions { get; set; } = new Dictionary<int, Contribution>(); // int is year
     public Dictionary<string, Holding> Holdings { get; set; } = new Dictionary<string, Holding>(); // string is the position name
 }

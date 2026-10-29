@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 namespace InvestmentViewer;
@@ -15,9 +16,17 @@ public static class Methods
     private const string Interest = "INT";
     private const string Exchange = "EXCHANGE";
     private const string Transfer = "TRANSFER";
-    private const int WidthLabel = 15;
-    private const int WidthDecimal = 12;
+    private const int WidthLabel = 18;
+    private const int WidthDecimal = 15;
+    private const int WidthSeperator = 50;
+    const string Underline = "\x1B[4m";
+    const string Reset = "\x1B[0m";
 
+    private enum Position
+    {
+        Left,
+        Center
+    }
 
     public static string[] GetFiles()
     {
@@ -205,6 +214,13 @@ public static class Methods
                 holding.Quantity = holding.Quantity / transaction.Quantity;
                 break;
 
+            case Exchange:
+                investment.Cash += transaction.Amount;
+                investment.Exchange += transaction.Amount;
+                break;
+            case Transfer:
+
+                break;
 
             Default:
                 throw new Exception($"Unknown transaction type in {path} at row {rowCount}");
@@ -244,7 +260,7 @@ public static class Methods
         return result;
     }
 
-    public static void WriteCharacters(char c, int repeat)
+    public static void WriteSeparator(char c, int repeat)
     {
         string result = string.Empty;
         for (int i = 0; i < repeat; i++)
@@ -255,16 +271,24 @@ public static class Methods
 
     }
 
-    public static void WritePortfolios(List<Portfolio> portfolios)
+    public static void WritePortfolios(Portfolio[] portfolios)
     {
         foreach(var portfolio in portfolios)
         {
-            WriteCharacters('*', 50);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            WriteSeparator('*', WidthSeperator);
+
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"    {portfolio.Name.ToUpper()}");
-            WriteCharacters('*', 50);
+
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            WriteSeparator('*', WidthSeperator);
+            Console.ResetColor();
+
             Console.WriteLine();
 
             WritePortfolio(portfolio);
+            Console.WriteLine();
         }
     }
 
@@ -274,47 +298,115 @@ public static class Methods
         string output = "";
         foreach (var investment in portfolio.InvestmentByCurrency)
         {
-            WriteCharacters('=', 50);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            WriteSeparator('=', WidthSeperator);
             Console.WriteLine($"    Currency {investment.Key}");
-            WriteCharacters('=', 50);
+            WriteSeparator('=', WidthSeperator);
+            Console.ResetColor();
 
             decimal deposits = investment.Value.Contributions.Sum(x => x.Value.Deposit);
             decimal withdrwals = investment.Value.Contributions.Sum(x => x.Value.Withdrawal);
-            decimal netDeposits = deposits - withdrwals;
+            decimal netDeposits = deposits + withdrwals;
             decimal cash = investment.Value.Cash;
             decimal profits = investment.Value.Holdings.Sum(x => x.Value.SalesProfit);
             decimal payouts = investment.Value.Holdings.Sum(x => x.Value.Payout);
             decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
 
-            int widthLabel = 15;
-            int widthDecimal = 12;
-
             output = "    {0} {1}";
-            Console.WriteLine(output, WriteLabel("Deposits", widthLabel), WriteDecimal(deposits, widthDecimal));
-            Console.WriteLine(output, WriteLabel("Withdrawal", widthLabel), WriteDecimal(withdrwals, widthDecimal));
-            Console.WriteLine(output, WriteLabel("Net Deposits", widthLabel), WriteDecimal(netDeposits, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Deposits", WidthLabel), WriteNumeric(deposits, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Withdrawal", WidthLabel), WriteNumeric(withdrwals, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Net Deposits", WidthLabel), WriteNumeric(netDeposits, WidthDecimal));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Payouts", widthLabel),WriteDecimal(payouts, widthDecimal));
-            Console.WriteLine(output, WriteLabel("Profits", widthLabel), WriteDecimal(profits, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Payouts", WidthLabel),WriteNumeric(payouts, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Profits", WidthLabel), WriteNumeric(profits, WidthDecimal));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Book Value", widthLabel), WriteDecimal(bookValue, widthDecimal));
-            Console.WriteLine(output, WriteLabel("Cash", widthLabel), WriteDecimal(cash, widthDecimal));
+            Console.WriteLine(output, WriteLabel("Book Value", WidthLabel), WriteNumeric(bookValue, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Cash", WidthLabel), WriteNumeric(cash, WidthDecimal));
+            Console.WriteLine();
 
+            WriteHoldings(investment.Value.Holdings);
 
         }
     }
 
-    private static void WriteHoldings(Holding holding)
+    private static void WriteHoldings(Dictionary<string, Holding> holdings)
     {
+        IEnumerable<KeyValuePair<string, Holding>> aboveZero = holdings.Where(x => x.Value.Quantity > 0).OrderBy(x=> x.Key);
+        IEnumerable<KeyValuePair<string, Holding>> belowZero = holdings.Where(x => x.Value.Quantity <= 0).OrderBy(x=> x.Key);
+
+        if (aboveZero.Count() > 0)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            WriteSeparator('-', WidthSeperator);
+            Console.WriteLine("Current Holdings");
+            WriteSeparator('-', WidthSeperator);
+            Console.ResetColor();
+            WriteHoldingTable(aboveZero);
+        }
+
+        if(belowZero.Count()> 0)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            WriteSeparator('-', WidthSeperator);
+            Console.WriteLine("    Past Holdings");
+            WriteSeparator('-', WidthSeperator);
+            Console.ResetColor();
+            WriteHoldingTable(belowZero);
+        }
 
     }
 
-    private static string WriteDecimal(decimal value, int width)
+    private static void WriteHoldingTable(IEnumerable<KeyValuePair<string, Holding>> holdings)
+    {
+        string header = " {0}{1} {2} {3} {4} {5} {6} {7}{8} ";
+        string row = header.Replace(' ', '|');
+
+        Console.WriteLine(header,
+            Underline,
+            WriteLabel("Name", WidthLabel, Position.Center),
+            WriteLabel("Quantity", WidthLabel, Position.Center),
+            WriteLabel("Cost Per", WidthLabel, Position.Center),
+            WriteLabel("Cost Total", WidthLabel, Position.Center),
+            WriteLabel("Payout", WidthLabel, Position.Center),
+            WriteLabel("Sales Profit", WidthLabel, Position.Center),
+            WriteLabel("Last Purchased", WidthLabel, Position.Center),
+            Reset
+        );
+
+        foreach (var holding in holdings)
+        {
+            Console.WriteLine(row,
+                Underline,
+                WriteLabel(holding.Key, WidthLabel),
+                WriteNumeric(holding.Value.Quantity, WidthLabel),
+                WriteNumeric(holding.Value.CostPer(), WidthLabel),
+                WriteNumeric(holding.Value.CostTotal, WidthLabel),
+                WriteNumeric(holding.Value.Payout, WidthLabel),
+                WriteNumeric(holding.Value.SalesProfit, WidthLabel),
+                WriteLabel(holding.Value.DateLastPurcahsed.ToString("yyyy-MM-dd"), WidthLabel),
+                Reset
+            );
+
+        }
+
+        Console.WriteLine();
+    }
+
+    private static string WriteNumeric<T>(T value, int width) where T : INumber<T>
     {
         char[] result = new char[width];
-        string valueAsString = value.ToString("N2");
+        string valueAsString = value.ToString();
+
+        if (valueAsString.Length > width) { throw new Exception("Can not write label value is too wide"); }
+
+        if(typeof(T) == typeof(decimal))
+        {
+            IFormattable formattable = value;
+            valueAsString = ((decimal)formattable).ToString("N2");
+        }
+
         int difference = width - valueAsString.Length;
 
         for (int i = valueAsString.Length - 1; i > -1; i--)
@@ -330,17 +422,39 @@ public static class Methods
         return new string(result);
     }
 
-    private static string WriteLabel(string value, int width)
+    private static string WriteLabel(string value, int width, Position position = Position.Left)
     {
+        if (value.Length > width) { throw new Exception("Can not write label value is too wide"); }
         char[] result = new char[width];
-        for (int i = 0; i < value.Length; i++)
+
+        switch(position)
         {
-            result[i] = value[i];
+            case Position.Left:
+                for (int i = 0; i < value.Length; i++)
+                {
+                    result[i] = value[i];
+                }
+                for (int i = value.Length; i < width; i++)
+                {
+                    result[i] = ' ';
+                }
+                break;
+
+            case Position.Center:
+                int leftPadCount = (width - value.Length) / 2;
+                for (int i = 0; i < width; i++)
+                {
+                    result[i] = ' ';
+                }
+
+                for(int i = 0; i < value.Length; i++)
+                {
+                    result[i + leftPadCount] = value[i];
+                }
+
+                break;
         }
-        for(int i = value.Length; i < width; i ++)
-        {
-            result[i] = ' ';
-        }
+
         return new string(result);
     }
 }
