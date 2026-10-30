@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Numerics;
+using Microsoft.Extensions.Configuration;
 using System.Runtime.InteropServices;
 using System.Text;
 namespace InvestmentViewer;
@@ -16,11 +17,13 @@ public static class Methods
     private const string Interest = "INT";
     private const string Exchange = "EXCHANGE";
     private const string Transfer = "TRANSFER";
-    private const int WidthLabel = 18;
-    private const int WidthDecimal = 15;
-    private const int WidthSeperator = 50;
-    const string Underline = "\x1B[4m";
-    const string Reset = "\x1B[0m";
+    private const string Underline = "\x1B[4m";
+    private const string Reset = "\x1B[0m";
+
+    private static readonly string pathData = "";
+    private static readonly int widthLabel = 18;
+    private static readonly int widthData = 15;
+    private static readonly int widthSeperator = 50;
 
     private enum Position
     {
@@ -28,24 +31,23 @@ public static class Methods
         Center
     }
 
+    static Methods()
+    {
+        string pathConfig = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"config.ini");
+        IConfigurationRoot config = new ConfigurationBuilder()
+            .AddIniFile(pathConfig, optional: false, reloadOnChange: false)
+            .Build();
+
+        pathData = config["Settings:directory"].TrimEnd();
+        int.TryParse(config["Settings:width_label"], out widthLabel);
+        int.TryParse(config["Settings:width_data"], out widthData);
+        int.TryParse(config["Settings:width_separator"], out widthSeperator);
+    }
+
     public static string[] GetFiles()
     {
-        string config = "config.txt";
-
-        if (File.Exists(config) == false)
-        {
-            throw new Exception("Can not find the config file");
-        }
-
-        string path = File.ReadAllText(config).TrimEnd();
         string[] results = new string[0];
-
-        if (Directory.Exists(path) == false)
-        {
-            throw new Exception($"can not find {path}'");
-        }
-
-        results = Directory.GetFiles(path, "*csv");
+        results = Directory.GetFiles(pathData, "*csv");
         return results;
     }
 
@@ -284,13 +286,13 @@ public static class Methods
         foreach(var portfolio in portfolios)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('*', WidthSeperator);
+            WriteSeparator('*', widthSeperator);
 
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"    {portfolio.Name.ToUpper()}");
 
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('*', WidthSeperator);
+            WriteSeparator('*', widthSeperator);
             Console.ResetColor();
 
             Console.WriteLine();
@@ -307,9 +309,9 @@ public static class Methods
         foreach (var investment in portfolio.InvestmentByCurrency)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('=', WidthSeperator);
+            WriteSeparator('=', widthSeperator);
             Console.WriteLine($"    Currency {investment.Key}");
-            WriteSeparator('=', WidthSeperator);
+            WriteSeparator('=', widthSeperator);
             Console.ResetColor();
 
             decimal deposits = investment.Value.Contributions.Sum(x => x.Value.Deposit);
@@ -321,17 +323,17 @@ public static class Methods
             decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
 
             output = "    {0} {1}";
-            Console.WriteLine(output, WriteLabel("Deposits", WidthLabel), WriteNumeric(deposits, WidthDecimal));
-            Console.WriteLine(output, WriteLabel("Withdrawal", WidthLabel), WriteNumeric(withdrwals, WidthDecimal));
-            Console.WriteLine(output, WriteLabel("Net Deposits", WidthLabel), WriteNumeric(netDeposits, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Deposits", widthLabel), WriteNumeric(deposits, widthData));
+            Console.WriteLine(output, WriteLabel("Withdrawal", widthLabel), WriteNumeric(withdrwals, widthData));
+            Console.WriteLine(output, WriteLabel("Net Deposits", widthLabel), WriteNumeric(netDeposits, widthData));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Payouts", WidthLabel),WriteNumeric(payouts, WidthDecimal));
-            Console.WriteLine(output, WriteLabel("Profits", WidthLabel), WriteNumeric(profits, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Payouts", widthLabel),WriteNumeric(payouts, widthData));
+            Console.WriteLine(output, WriteLabel("Profits", widthLabel), WriteNumeric(profits, widthData));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Book Value", WidthLabel), WriteNumeric(bookValue, WidthDecimal));
-            Console.WriteLine(output, WriteLabel("Cash", WidthLabel), WriteNumeric(cash, WidthDecimal));
+            Console.WriteLine(output, WriteLabel("Book Value", widthLabel), WriteNumeric(bookValue, widthData));
+            Console.WriteLine(output, WriteLabel("Cash", widthLabel), WriteNumeric(cash, widthData));
             Console.WriteLine();
 
             WriteHoldings(investment.Value.Holdings);
@@ -347,9 +349,9 @@ public static class Methods
         if (aboveZero.Count() > 0)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('-', WidthSeperator);
+            WriteSeparator('-', widthSeperator);
             Console.WriteLine("Current Holdings");
-            WriteSeparator('-', WidthSeperator);
+            WriteSeparator('-', widthSeperator);
             Console.ResetColor();
             WriteHoldingTable(aboveZero);
         }
@@ -357,9 +359,9 @@ public static class Methods
         if(belowZero.Count()> 0)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('-', WidthSeperator);
+            WriteSeparator('-', widthSeperator);
             Console.WriteLine("    Past Holdings");
-            WriteSeparator('-', WidthSeperator);
+            WriteSeparator('-', widthSeperator);
             Console.ResetColor();
             WriteHoldingTable(belowZero);
         }
@@ -373,13 +375,13 @@ public static class Methods
 
         Console.WriteLine(header,
             Underline,
-            WriteLabel("Name", WidthLabel, Position.Center),
-            WriteLabel("Quantity", WidthLabel, Position.Center),
-            WriteLabel("Cost Per", WidthLabel, Position.Center),
-            WriteLabel("Cost Total", WidthLabel, Position.Center),
-            WriteLabel("Payout", WidthLabel, Position.Center),
-            WriteLabel("Sales Profit", WidthLabel, Position.Center),
-            WriteLabel("Last Purchased", WidthLabel, Position.Center),
+            WriteLabel("Name", widthLabel, Position.Center),
+            WriteLabel("Quantity", widthLabel, Position.Center),
+            WriteLabel("Cost Per", widthLabel, Position.Center),
+            WriteLabel("Cost Total", widthLabel, Position.Center),
+            WriteLabel("Payout", widthLabel, Position.Center),
+            WriteLabel("Sales Profit", widthLabel, Position.Center),
+            WriteLabel("Last Purchased", widthLabel, Position.Center),
             Reset
         );
 
@@ -387,13 +389,13 @@ public static class Methods
         {
             Console.WriteLine(row,
                 Underline,
-                WriteLabel(holding.Key, WidthLabel),
-                WriteNumeric(holding.Value.Quantity, WidthLabel),
-                WriteNumeric(holding.Value.CostPer(), WidthLabel),
-                WriteNumeric(holding.Value.CostTotal, WidthLabel),
-                WriteNumeric(holding.Value.Payout, WidthLabel),
-                WriteNumeric(holding.Value.SalesProfit, WidthLabel),
-                WriteLabel(holding.Value.DateLastPurcahsed.ToString("yyyy-MM-dd"), WidthLabel),
+                WriteLabel(holding.Key, widthLabel),
+                WriteNumeric(holding.Value.Quantity, widthLabel),
+                WriteNumeric(holding.Value.CostPer(), widthLabel),
+                WriteNumeric(holding.Value.CostTotal, widthLabel),
+                WriteNumeric(holding.Value.Payout, widthLabel),
+                WriteNumeric(holding.Value.SalesProfit, widthLabel),
+                WriteLabel(holding.Value.DateLastPurcahsed.ToString("yyyy-MM-dd"), widthLabel, Position.Center),
                 Reset
             );
 
