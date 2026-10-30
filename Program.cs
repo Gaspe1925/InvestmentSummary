@@ -21,3 +21,4 @@ for (int i = 0; i < files.Length; i++)
 
 
 Methods.WritePortfolios(await Task.WhenAll(tasks));
+Console.Read();

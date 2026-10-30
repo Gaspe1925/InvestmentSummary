@@ -30,14 +30,22 @@ public static class Methods
 
     public static string[] GetFiles()
     {
-        string[] results = new string[0];
+        string config = "config.txt";
 
-        string path = "Investments";
-        if (Directory.Exists(path))
+        if (File.Exists(config) == false)
         {
-            results = Directory.GetFiles(path, "*csv");
+            throw new Exception("Can not find the config file");
         }
 
+        string path = File.ReadAllText(config).TrimEnd();
+        string[] results = new string[0];
+
+        if (Directory.Exists(path) == false)
+        {
+            throw new Exception($"can not find {path}'");
+        }
+
+        results = Directory.GetFiles(path, "*csv");
         return results;
     }
 
@@ -120,7 +128,7 @@ public static class Methods
 
         }
 
-        portfolio.Name = path.Split("/")[1].Replace(".csv", "");
+        portfolio.Name = path.Split("/").Last().Replace(".csv", "");
         return portfolio;
     }
 
