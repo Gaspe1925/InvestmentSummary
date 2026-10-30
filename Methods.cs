@@ -18,9 +18,24 @@ public static class Methods
     private const string Reset = "\x1B[0m";
 
     private static readonly string pathData = "";
-    private static readonly int widthLabel = 18;
-    private static readonly int widthData = 15;
-    private static readonly int widthSeperator = 50;
+    private static readonly int widthLabel;
+    private static readonly int widthData;
+    // private static readonly int widthSeperator;
+
+    private static readonly char portfolioSeparatorChar;
+    private static readonly int portfolioSeparatorWidth;
+    private static readonly ConsoleColor portfolioSeparatorColor;
+    private static readonly ConsoleColor portfolioMessageColour;
+
+    private static readonly char investmentSeparatorChar;
+    private static readonly int investmentSeparatorWidth;
+    private static readonly ConsoleColor investmentSeparatorColor;
+    private static readonly ConsoleColor investmentMessageColour;
+
+    private static readonly char holdingSeparatorChar;
+    private static readonly int holdingSeparatorWidth;
+    private static readonly ConsoleColor holdingSeparatorColor;
+    private static readonly ConsoleColor holdingMessageColour;
 
     private enum Position
     {
@@ -35,10 +50,25 @@ public static class Methods
             .AddIniFile(pathConfig, optional: false, reloadOnChange: false)
             .Build();
 
-        pathData = config["Settings:directory"].TrimEnd();
-        int.TryParse(config["Settings:width_label"], out widthLabel);
-        int.TryParse(config["Settings:width_data"], out widthData);
-        int.TryParse(config["Settings:width_separator"], out widthSeperator);
+        pathData = config["General:directory"].TrimEnd();
+        int.TryParse(config["General:width_label"], out widthLabel);
+        int.TryParse(config["General:width_data"], out widthData);
+        // int.TryParse(config["Settings:width_separator"], out widthSeperator);
+
+        portfolioSeparatorChar = config["Portfolio:separator_char"][0];
+        int.TryParse(config["Portfolio:separator_width"], out portfolioSeparatorWidth);
+        Enum.TryParse(config["Portfolio:separator_colour"] , out portfolioSeparatorColor);
+        Enum.TryParse(config["Portfolio:message_colour"], out portfolioMessageColour);
+
+        investmentSeparatorChar = config["Investment:separator_char"][0];
+        int.TryParse(config["Investment:separator_width"], out investmentSeparatorWidth);
+        Enum.TryParse(config["Investment:separator_colour"] , out investmentSeparatorColor);
+        Enum.TryParse(config["Investment:message_colour"] , out investmentMessageColour);
+
+        holdingSeparatorChar = config["Holding:separator_char"][0];
+        int.TryParse(config["Holding:separator_width"], out holdingSeparatorWidth);
+        Enum.TryParse(config["Holding:separator_colour"] , out holdingSeparatorColor);
+        Enum.TryParse(config["Holding:message_colour"], out holdingMessageColour);
     }
 
     public static string[] GetFiles()
@@ -306,23 +336,29 @@ public static class Methods
         foreach(var portfolio in portfolios)
         {
 
-            WriteHeader($"    {portfolio.Name}", '*', widthSeperator, ConsoleColor.DarkGray, ConsoleColor.DarkBlue, true);
-            WritePortfolio(portfolio);
+            WriteHeader($"    {portfolio.Name}",
+                portfolioSeparatorChar,
+                portfolioSeparatorWidth,
+                portfolioSeparatorColor,
+                portfolioMessageColour, true);
+
+            WriteInvestment(portfolio);
             Console.WriteLine();
         }
     }
 
-    private static void WritePortfolio(Portfolio portfolio)
+    private static void WriteInvestment(Portfolio portfolio)
     {
 
         string output = "";
         foreach (var investment in portfolio.InvestmentByCurrency)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('=', widthSeperator);
-            Console.WriteLine($"    Currency {investment.Key}");
-            WriteSeparator('=', widthSeperator);
-            Console.ResetColor();
+
+            WriteHeader($"    Currency {investment.Key}", investmentSeparatorChar, investmentSeparatorWidth,
+                investmentSeparatorColor,
+                investmentMessageColour,
+                false
+            );
 
             decimal deposits = investment.Value.Contributions.Sum(x => x.Value.Deposit);
             decimal withdrwals = investment.Value.Contributions.Sum(x => x.Value.Withdrawal);
@@ -358,21 +394,13 @@ public static class Methods
 
         if (aboveZero.Count() > 0)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('-', widthSeperator);
-            Console.WriteLine("Current Holdings");
-            WriteSeparator('-', widthSeperator);
-            Console.ResetColor();
+            // WriteHeader("    Current Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
             WriteHoldingTable(aboveZero);
         }
 
         if(belowZero.Count()> 0)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('-', widthSeperator);
-            Console.WriteLine("    Past Holdings");
-            WriteSeparator('-', widthSeperator);
-            Console.ResetColor();
+            // WriteHeader("    Past Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
             WriteHoldingTable(belowZero);
         }
 
@@ -380,8 +408,9 @@ public static class Methods
 
     private static void WriteHoldingTable(IEnumerable<KeyValuePair<string, Holding>> holdings)
     {
-        string header = " {0}{1} {2} {3} {4} {5} {6} {7}{8} ";
-        string row = header.Replace(' ', '|');
+        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}{8}_";
+        string header = template.Replace('_',' ');
+        string row = template.Replace('_', '|');
 
         Console.WriteLine(header,
             Underline,
