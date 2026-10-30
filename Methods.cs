@@ -137,7 +137,7 @@ public static class Methods
                     Date = ParseDate(columns[0], path, rowCount),
                     Type = columns[1].ToUpper().TrimEnd(),
                     Name = columns[2].ToUpper().TrimEnd(),
-                    Quantity = ParseInt(columns[3], path, rowCount),
+                    Quantity = ParseDecimal(columns[3], path, rowCount),
                     Amount = ParseDecimal(columns[4], path, rowCount),
                     Currency = columns[5].ToUpper().TrimEnd()
                 };
@@ -417,7 +417,7 @@ public static class Methods
             WriteLabel("Name", widthLabel, Position.Center),
             WriteLabel("Quantity", widthLabel, Position.Center),
             WriteLabel("Cost Per", widthLabel, Position.Center),
-            WriteLabel("Cost Total", widthLabel, Position.Center),
+            WriteLabel("Book Values", widthLabel, Position.Center),
             WriteLabel("Payout", widthLabel, Position.Center),
             WriteLabel("Sales Profit", widthLabel, Position.Center),
             WriteLabel("Last Purchased", widthLabel, Position.Center),
@@ -445,16 +445,17 @@ public static class Methods
 
     private static string WriteNumeric<T>(T value, int width) where T : INumber<T>
     {
+
         char[] result = new char[width];
         string valueAsString = value.ToString();
-
-        if (valueAsString.Length > width) { throw new Exception("Can not write label value is too wide"); }
 
         if(typeof(T) == typeof(decimal))
         {
             IFormattable formattable = value;
             valueAsString = ((decimal)formattable).ToString("N2");
         }
+
+        if (valueAsString.Length > width) { throw new Exception("Can not write numeric value is too wide"); }
 
         int difference = width - valueAsString.Length;
 

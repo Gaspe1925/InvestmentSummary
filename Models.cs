@@ -30,7 +30,7 @@ public class Contribution
 public class Holding
 {
     public DateTime DateLastPurcahsed { get; set; }
-    public int Quantity { get; set; } = 0;
+    public decimal Quantity { get; set; } = 0; //  ran into issues with fractional quantity
     public decimal CostTotal { get; set; } = 0; // Book value
     public decimal Payout { get; set; } = 0;    // Dividend or interest depending on holding type
     public decimal SalesProfit { get; set; } = 0;
@@ -46,7 +46,7 @@ public record Transaction
     public DateTime Date { get; init; }
     public string Type { get; init; } = "";   // Buy, Sell, Contribution, Withdrawal, Split
     public string Name { get; set; } = "";
-    public int Quantity { get; init; }
+    public decimal Quantity { get; init; }
     public decimal Amount { get; init; } // Total value of transaction
     public string Currency { get; set; } = "";
 }
