@@ -1,8 +1,5 @@
-﻿using System.IO;
-using System.Numerics;
+﻿using System.Numerics;
 using Microsoft.Extensions.Configuration;
-using System.Runtime.InteropServices;
-using System.Text;
 namespace InvestmentViewer;
 
 public static class Methods
@@ -117,7 +114,7 @@ public static class Methods
                 try
                 {
 
-                    ProcessTransaction(portfolio, transaction, path, rowCount);
+                    UpdatePortfolio(portfolio, transaction, path, rowCount);
                 }
                 catch (Exception e)
                 {
@@ -135,7 +132,7 @@ public static class Methods
     }
 
     // Process transactin and store in portfolio
-    private static void ProcessTransaction(Portfolio portfolio, Transaction transaction, string path, int rowCount)
+    private static void UpdatePortfolio(Portfolio portfolio, Transaction transaction, string path, int rowCount)
     {
         if (string.IsNullOrEmpty(transaction.Name) &&
                 (transaction.Type == Buy || transaction.Type == Sell || transaction.Type == Split || transaction.Type == Reverse))
@@ -270,6 +267,29 @@ public static class Methods
         return result;
     }
 
+    private static void WriteHeader(string message,char c, int repeat,
+        ConsoleColor lineColour = ConsoleColor.White,
+        ConsoleColor messageColour = ConsoleColor.White,
+        bool upperCase = false)
+    {
+        Console.ForegroundColor = lineColour;
+        WriteSeparator(c, repeat);
+
+        Console.ForegroundColor = messageColour;
+        if (upperCase)
+        {
+            Console.WriteLine(message.ToUpper());
+        }
+        else
+        {
+            Console.WriteLine(message);
+        }
+
+        Console.ForegroundColor = lineColour;
+        WriteSeparator(c, repeat);
+        Console.ResetColor();
+    }
+
     public static void WriteSeparator(char c, int repeat)
     {
         string result = string.Empty;
@@ -285,18 +305,8 @@ public static class Methods
     {
         foreach(var portfolio in portfolios)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('*', widthSeperator);
 
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine($"    {portfolio.Name.ToUpper()}");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            WriteSeparator('*', widthSeperator);
-            Console.ResetColor();
-
-            Console.WriteLine();
-
+            WriteHeader($"    {portfolio.Name}", '*', widthSeperator, ConsoleColor.DarkGray, ConsoleColor.DarkBlue, true);
             WritePortfolio(portfolio);
             Console.WriteLine();
         }
