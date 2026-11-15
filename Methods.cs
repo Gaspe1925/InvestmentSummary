@@ -37,6 +37,8 @@ public static class Methods
     private static readonly ConsoleColor holdingSeparatorColor;
     private static readonly ConsoleColor holdingMessageColour;
 
+    private static readonly string quotesFile;
+
     private enum Position
     {
         Left,
@@ -69,6 +71,8 @@ public static class Methods
         int.TryParse(config["Holding:separator_width"], out holdingSeparatorWidth);
         Enum.TryParse(config["Holding:separator_colour"] , out holdingSeparatorColor);
         Enum.TryParse(config["Holding:message_colour"], out holdingMessageColour);
+
+        quotesFile =config["Quotes:file"].TrimEnd();
     }
 
     public static string[] GetFiles()
@@ -76,6 +80,38 @@ public static class Methods
         string[] results = new string[0];
         results = Directory.GetFiles(pathData, "*csv");
         return results;
+    }
+
+    public static async Task<Dictionary<string, decimal>> GetQuotes()
+    {
+        Dictionary<string, decimal> quotes = new Dictionary<string, decimal>();
+
+        using (StreamReader reader = new StreamReader(quotesFile))
+        {
+            string row;
+            string stock;
+            string[] columns;
+
+            reader.ReadLine();
+            while ((row = reader.ReadLine()) != null)
+            {
+                columns = row.Split(',');
+                stock = columns[0];
+                quotes.Add(stock.Split('.')[0].ToUpper(), await YahooService.GetQuote(stock));
+            }
+        }
+        return quotes;
+    }
+
+    public static void UpdateMarketPrice(Portfolio portfolio, Dictionary<string, decimal> quotes)
+    {
+        foreach (var investment in portfolio.InvestmentByCurrency)
+        {
+            foreach (var holding in investment.Value.Holdings)
+            {
+                // update holding market value here
+            }
+        }
     }
 
     public static Portfolio GetPortfolio(string path)
@@ -87,12 +123,13 @@ public static class Methods
             string row;
             string type;
             int rowCount = 1;
+            string[] columns;
 
             reader.ReadLine();
             while ((row = reader.ReadLine()) != null)
             {
                 rowCount++;
-                string[] columns = row.Split(",");
+                columns = row.Split(",");
 
                 type = columns[1].ToUpper().Trim();
 
@@ -113,7 +150,7 @@ public static class Methods
                 }
 
                 bool isPurchase = (type == Buy || type == Sell);
-                if ((isContribution || isPurchase || isPayout || isSplit) == false)
+                if ((isContribution || isPurchase || isPayout || isSplit || isExchange || isTransfer) == false)
                 {
                     string e = $""""
                         unrecongnized type {type}
@@ -135,8 +172,8 @@ public static class Methods
                 Transaction transaction = new Transaction()
                 {
                     Date = ParseDate(columns[0], path, rowCount),
-                    Type = columns[1].ToUpper().TrimEnd(),
-                    Name = columns[2].ToUpper().TrimEnd(),
+                    Type = columns[1].ToUpper().TrimStart().TrimEnd(),
+                    Name = columns[2].ToUpper().TrimStart().TrimEnd(),
                     Quantity = ParseDecimal(columns[3], path, rowCount),
                     Amount = ParseDecimal(columns[4], path, rowCount),
                     Currency = columns[5].ToUpper().TrimEnd()
@@ -375,7 +412,7 @@ public static class Methods
             Console.WriteLine();
 
             Console.WriteLine(output, WriteLabel("Payouts", widthLabel),WriteNumeric(payouts, widthData));
-            Console.WriteLine(output, WriteLabel("Profits", widthLabel), WriteNumeric(profits, widthData));
+            Console.WriteLine(output, WriteLabel("Sales Profits", widthLabel), WriteNumeric(profits, widthData));
             Console.WriteLine();
 
             Console.WriteLine(output, WriteLabel("Book Value", widthLabel), WriteNumeric(bookValue, widthData));
@@ -395,18 +432,23 @@ public static class Methods
         if (aboveZero.Count() > 0)
         {
             // WriteHeader("    Current Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
-            WriteHoldingTable(aboveZero);
+            WriteTableHoldingPrevious(aboveZero);
         }
 
         if(belowZero.Count()> 0)
         {
             // WriteHeader("    Past Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
-            WriteHoldingTable(belowZero);
+            WriteTableHoldingPrevious(belowZero);
         }
 
     }
 
-    private static void WriteHoldingTable(IEnumerable<KeyValuePair<string, Holding>> holdings)
+    private static void WriteTableHoldingCurrent(IEnumerable<KeyValuePair<string, Holding>> holdings)
+    {
+        
+    }
+    
+    private static void WriteTableHoldingPrevious(IEnumerable<KeyValuePair<string, Holding>> holdings)
     {
         string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}{8}_";
         string header = template.Replace('_',' ');
@@ -417,10 +459,10 @@ public static class Methods
             WriteLabel("Name", widthLabel, Position.Center),
             WriteLabel("Quantity", widthLabel, Position.Center),
             WriteLabel("Cost Per", widthLabel, Position.Center),
-            WriteLabel("Book Values", widthLabel, Position.Center),
+            WriteLabel("Book Value", widthLabel, Position.Center),
             WriteLabel("Payout", widthLabel, Position.Center),
             WriteLabel("Sales Profit", widthLabel, Position.Center),
-            WriteLabel("Last Purchased", widthLabel, Position.Center),
+            WriteLabel("Last Purchase", widthLabel, Position.Center),
             Reset
         );
 
@@ -477,7 +519,7 @@ public static class Methods
         if (value.Length > width) { throw new Exception("Can not write label value is too wide"); }
         char[] result = new char[width];
 
-        switch(position)
+        switch (position)
         {
             case Position.Left:
                 for (int i = 0; i < value.Length; i++)
@@ -497,7 +539,7 @@ public static class Methods
                     result[i] = ' ';
                 }
 
-                for(int i = 0; i < value.Length; i++)
+                for (int i = 0; i < value.Length; i++)
                 {
                     result[i + leftPadCount] = value[i];
                 }
@@ -507,4 +549,5 @@ public static class Methods
 
         return new string(result);
     }
+
 }
