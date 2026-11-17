@@ -2,6 +2,8 @@
 using InvestmentViewer;
 
 Console.Clear();
+Task<Dictionary<string, decimal>> getQuotes = Methods.GetQuotes();
+
 string[] files = Methods.GetFiles();
 Task<Portfolio>[] tasks = new Task<Portfolio>[files.Length];
 
@@ -10,9 +12,6 @@ if (files.Length == 0)
     Console.WriteLine("No Files Found");
     return;
 }
-
-Task<Dictionary<string, decimal>> quotes = Methods.GetQuotes();
-
 
 for (int i = 0; i < files.Length; i++)
 {
@@ -23,7 +22,7 @@ for (int i = 0; i < files.Length; i++)
     });
 }
 
-await quotes;
+Dictionary<string, decimal> quotes = await getQuotes;
 
 Methods.WritePortfolios(await Task.WhenAll(tasks));
 Console.Read();

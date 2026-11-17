@@ -34,13 +34,16 @@ public class Holding
     public decimal CostTotal { get; set; } = 0; // Book value
     public decimal Payout { get; set; } = 0;    // Dividend or interest depending on holding type
     public decimal SalesProfit { get; set; } = 0;
-    public decimal MarketPrice { get; set; }
+    public decimal MarketPrice { get; set; } = 0;
     public decimal CostPer()
     {
         if (Quantity == 0) { return 0; }
         return CostTotal / Quantity;
     }
-    public decimal MarketValue { get; set; }
+    public decimal MarketValue()
+    {
+        return MarketPrice * Quantity;
+    }
 }
 
 public record Transaction

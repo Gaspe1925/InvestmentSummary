@@ -110,6 +110,15 @@ public static class Methods
             foreach (var holding in investment.Value.Holdings)
             {
                 // update holding market value here
+                if (holding.Value.Quantity == 0)
+                {
+                    continue;
+                }
+
+                if(quotes.ContainsKey(holding.Key))
+                {
+                    holding.Value.MarketPrice = quotes[holding.Key];
+                }
             }
         }
     }
@@ -432,7 +441,7 @@ public static class Methods
         if (aboveZero.Count() > 0)
         {
             // WriteHeader("    Current Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
-            WriteTableHoldingPrevious(aboveZero);
+            WriteTableHoldingCurrent(aboveZero);
         }
 
         if(belowZero.Count()> 0)
@@ -445,9 +454,48 @@ public static class Methods
 
     private static void WriteTableHoldingCurrent(IEnumerable<KeyValuePair<string, Holding>> holdings)
     {
-        
+        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}{10}";
+        string header = template.Replace('_',' ');
+        string row = template.Replace('_', '|');
+
+        Console.WriteLine(header,
+            Underline,
+            WriteLabel("Name", widthLabel, Position.Center),
+            WriteLabel("Quantity", widthLabel, Position.Center),
+            WriteLabel("Cost Per", widthLabel, Position.Center),
+            WriteLabel("Book Value", widthLabel, Position.Center),
+            WriteLabel("Market Value", widthLabel, Position.Center),
+            WriteLabel("Open Profit", widthLabel, Position.Center),
+            WriteLabel("Payout", widthLabel, Position.Center),
+            WriteLabel("Sales Profit", widthLabel, Position.Center),
+            WriteLabel("Return", widthLabel, Position.Center),
+            Reset
+        );
+
+        foreach (var holding in holdings)
+        {
+            Console.WriteLine(row,
+                Underline,
+                WriteLabel(holding.Key, widthLabel),
+                WriteNumeric(holding.Value.Quantity, widthLabel),
+                WriteNumeric(holding.Value.CostPer(), widthLabel),
+                WriteNumeric(holding.Value.CostTotal, widthLabel),
+                WriteNumeric(holding.Value.MarketValue(), widthLabel),
+                WriteNumeric( holding.Value.MarketValue()
+                    - holding.Value.CostTotal, widthLabel),
+                WriteNumeric(holding.Value.Payout, widthLabel),
+                WriteNumeric(holding.Value.SalesProfit, widthLabel),
+                WriteNumeric(holding.Value.SalesProfit 
+                    + holding.Value.Payout 
+                    + holding.Value.MarketValue() 
+                    - holding.Value.CostTotal, widthLabel),
+                Reset
+            );
+        }
+
+        Console.WriteLine();
     }
-    
+
     private static void WriteTableHoldingPrevious(IEnumerable<KeyValuePair<string, Holding>> holdings)
     {
         string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}{8}_";
@@ -462,7 +510,7 @@ public static class Methods
             WriteLabel("Book Value", widthLabel, Position.Center),
             WriteLabel("Payout", widthLabel, Position.Center),
             WriteLabel("Sales Profit", widthLabel, Position.Center),
-            WriteLabel("Last Purchase", widthLabel, Position.Center),
+            WriteLabel("Return", widthLabel, Position.Center),
             Reset
         );
 
@@ -476,7 +524,7 @@ public static class Methods
                 WriteNumeric(holding.Value.CostTotal, widthLabel),
                 WriteNumeric(holding.Value.Payout, widthLabel),
                 WriteNumeric(holding.Value.SalesProfit, widthLabel),
-                WriteLabel(holding.Value.DateLastPurcahsed.ToString("yyyy-MM-dd"), widthLabel, Position.Center),
+                WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, widthLabel),
                 Reset
             );
 
