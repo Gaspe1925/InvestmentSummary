@@ -23,6 +23,8 @@ for (int i = 0; i < files.Length; i++)
 }
 
 Dictionary<string, decimal> quotes = await getQuotes;
+List<Portfolio> portfolios = (await Task.WhenAll(tasks)).ToList();
 
-Methods.WritePortfolios(await Task.WhenAll(tasks));
+Methods.UpdateMarketPrice(portfolios, quotes);
+Methods.WritePortfolios(portfolios);
 Console.Read();

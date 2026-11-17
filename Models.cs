@@ -44,6 +44,21 @@ public class Holding
     {
         return MarketPrice * Quantity;
     }
+
+    public decimal OpenProfit()
+    {
+        return MarketValue() - CostTotal;
+    }
+
+    public decimal TotalProfit()
+    {
+        return OpenProfit() + SalesProfit + Payout;
+    }
+
+    public decimal TotalValue()
+    {
+        return MarketValue() + SalesProfit + Payout;
+    }
 }
 
 public record Transaction

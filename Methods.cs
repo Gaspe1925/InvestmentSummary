@@ -18,8 +18,8 @@ public static class Methods
     private const string Reset = "\x1B[0m";
 
     private static readonly string pathData = "";
-    private static readonly int widthLabel;
-    private static readonly int widthData;
+    private static readonly int widthSmall;
+    private static readonly int widthNormal;
     // private static readonly int widthSeperator;
 
     private static readonly char portfolioSeparatorChar;
@@ -42,7 +42,8 @@ public static class Methods
     private enum Position
     {
         Left,
-        Center
+        Center,
+        Right
     }
 
     static Methods()
@@ -53,8 +54,8 @@ public static class Methods
             .Build();
 
         pathData = config["General:directory"].TrimEnd();
-        int.TryParse(config["General:width_label"], out widthLabel);
-        int.TryParse(config["General:width_data"], out widthData);
+        int.TryParse(config["General:width_small"], out widthSmall);
+        int.TryParse(config["General:width_normal"], out widthNormal);
         // int.TryParse(config["Settings:width_separator"], out widthSeperator);
 
         portfolioSeparatorChar = config["Portfolio:separator_char"][0];
@@ -72,7 +73,7 @@ public static class Methods
         Enum.TryParse(config["Holding:separator_colour"] , out holdingSeparatorColor);
         Enum.TryParse(config["Holding:message_colour"], out holdingMessageColour);
 
-        quotesFile =config["Quotes:file"].TrimEnd();
+        quotesFile =config["General:quotes_file"].TrimEnd();
     }
 
     public static string[] GetFiles()
@@ -103,21 +104,23 @@ public static class Methods
         return quotes;
     }
 
-    public static void UpdateMarketPrice(Portfolio portfolio, Dictionary<string, decimal> quotes)
+    public static void UpdateMarketPrice(List<Portfolio> portfolios, Dictionary<string, decimal> quotes)
     {
-        foreach (var investment in portfolio.InvestmentByCurrency)
+        foreach (var portfolio in portfolios)
         {
-            foreach (var holding in investment.Value.Holdings)
+            foreach (var investment in portfolio.InvestmentByCurrency)
             {
-                // update holding market value here
-                if (holding.Value.Quantity == 0)
+                foreach (var holding in investment.Value.Holdings)
                 {
-                    continue;
-                }
+                    if (holding.Value.Quantity == 0)
+                    {
+                        continue;
+                    }
 
-                if(quotes.ContainsKey(holding.Key))
-                {
-                    holding.Value.MarketPrice = quotes[holding.Key];
+                    if(quotes.ContainsKey(holding.Key))
+                    {
+                        holding.Value.MarketPrice = quotes[holding.Key];
+                    }
                 }
             }
         }
@@ -377,7 +380,7 @@ public static class Methods
 
     }
 
-    public static void WritePortfolios(Portfolio[] portfolios)
+    public static void WritePortfolios(List<Portfolio> portfolios)
     {
         foreach(var portfolio in portfolios)
         {
@@ -415,17 +418,17 @@ public static class Methods
             decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
 
             output = "    {0} {1}";
-            Console.WriteLine(output, WriteLabel("Deposits", widthLabel), WriteNumeric(deposits, widthData));
-            Console.WriteLine(output, WriteLabel("Withdrawal", widthLabel), WriteNumeric(withdrwals, widthData));
-            Console.WriteLine(output, WriteLabel("Net Deposits", widthLabel), WriteNumeric(netDeposits, widthData));
+            Console.WriteLine(output, WriteLabel("Deposits", widthNormal), WriteNumeric(deposits, widthNormal));
+            Console.WriteLine(output, WriteLabel("Withdrawal", widthNormal), WriteNumeric(withdrwals, widthNormal));
+            Console.WriteLine(output, WriteLabel("Net Deposits", widthNormal), WriteNumeric(netDeposits, widthNormal));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Payouts", widthLabel),WriteNumeric(payouts, widthData));
-            Console.WriteLine(output, WriteLabel("Sales Profits", widthLabel), WriteNumeric(profits, widthData));
+            Console.WriteLine(output, WriteLabel("Payouts", widthNormal),WriteNumeric(payouts, widthNormal));
+            Console.WriteLine(output, WriteLabel("Sales Profits", widthNormal), WriteNumeric(profits, widthNormal));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Book Value", widthLabel), WriteNumeric(bookValue, widthData));
-            Console.WriteLine(output, WriteLabel("Cash", widthLabel), WriteNumeric(cash, widthData));
+            Console.WriteLine(output, WriteLabel("Book Value", widthNormal), WriteNumeric(bookValue, widthNormal));
+            Console.WriteLine(output, WriteLabel("Cash", widthNormal), WriteNumeric(cash, widthNormal));
             Console.WriteLine();
 
             WriteHoldings(investment.Value.Holdings);
@@ -454,21 +457,23 @@ public static class Methods
 
     private static void WriteTableHoldingCurrent(IEnumerable<KeyValuePair<string, Holding>> holdings)
     {
-        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}{10}";
+        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}{12}_";
         string header = template.Replace('_',' ');
         string row = template.Replace('_', '|');
 
         Console.WriteLine(header,
             Underline,
-            WriteLabel("Name", widthLabel, Position.Center),
-            WriteLabel("Quantity", widthLabel, Position.Center),
-            WriteLabel("Cost Per", widthLabel, Position.Center),
-            WriteLabel("Book Value", widthLabel, Position.Center),
-            WriteLabel("Market Value", widthLabel, Position.Center),
-            WriteLabel("Open Profit", widthLabel, Position.Center),
-            WriteLabel("Payout", widthLabel, Position.Center),
-            WriteLabel("Sales Profit", widthLabel, Position.Center),
-            WriteLabel("Return", widthLabel, Position.Center),
+            WriteLabel("Name", widthSmall, Position.Center),
+            WriteLabel("Quantity", widthNormal, Position.Center),
+            WriteLabel("Cost Per", widthSmall, Position.Center),
+            WriteLabel("Book Value", widthNormal, Position.Center),
+            WriteLabel("Market Value", widthNormal, Position.Center),
+            WriteLabel("Open Profit", widthNormal, Position.Center),
+            WriteLabel("%", widthSmall, Position.Center),
+            WriteLabel("Payout", widthNormal, Position.Center),
+            WriteLabel("Sales Profit", widthNormal, Position.Center),
+            WriteLabel("Return", widthNormal, Position.Center),
+            WriteLabel("%", widthSmall, Position.Center),
             Reset
         );
 
@@ -476,19 +481,19 @@ public static class Methods
         {
             Console.WriteLine(row,
                 Underline,
-                WriteLabel(holding.Key, widthLabel),
-                WriteNumeric(holding.Value.Quantity, widthLabel),
-                WriteNumeric(holding.Value.CostPer(), widthLabel),
-                WriteNumeric(holding.Value.CostTotal, widthLabel),
-                WriteNumeric(holding.Value.MarketValue(), widthLabel),
-                WriteNumeric( holding.Value.MarketValue()
-                    - holding.Value.CostTotal, widthLabel),
-                WriteNumeric(holding.Value.Payout, widthLabel),
-                WriteNumeric(holding.Value.SalesProfit, widthLabel),
-                WriteNumeric(holding.Value.SalesProfit 
-                    + holding.Value.Payout 
-                    + holding.Value.MarketValue() 
-                    - holding.Value.CostTotal, widthLabel),
+                WriteLabel(holding.Key, widthSmall),
+                WriteNumeric(holding.Value.Quantity, widthNormal),
+                WriteNumeric(holding.Value.CostPer(), widthSmall),
+                WriteNumeric(holding.Value.CostTotal, widthNormal),
+                WriteNumeric(holding.Value.MarketValue(), widthNormal),
+                WriteNumeric(holding.Value.OpenProfit(), widthNormal),
+                WriteLabel($"{holding.Value.MarketValue() / holding.Value.CostTotal - 1:P1}",
+                    widthSmall, Position.Right),
+                WriteNumeric(holding.Value.Payout, widthNormal),
+                WriteNumeric(holding.Value.SalesProfit, widthNormal),
+                WriteNumeric(holding.Value.TotalProfit(), widthNormal),
+                WriteLabel($"{holding.Value.TotalValue() / holding.Value.CostTotal - 1:P1}", widthSmall,
+                    Position.Right),
                 Reset
             );
         }
@@ -504,13 +509,13 @@ public static class Methods
 
         Console.WriteLine(header,
             Underline,
-            WriteLabel("Name", widthLabel, Position.Center),
-            WriteLabel("Quantity", widthLabel, Position.Center),
-            WriteLabel("Cost Per", widthLabel, Position.Center),
-            WriteLabel("Book Value", widthLabel, Position.Center),
-            WriteLabel("Payout", widthLabel, Position.Center),
-            WriteLabel("Sales Profit", widthLabel, Position.Center),
-            WriteLabel("Return", widthLabel, Position.Center),
+            WriteLabel("Name", widthSmall, Position.Center),
+            WriteLabel("Quantity", widthNormal, Position.Center),
+            WriteLabel("Cost Per", widthSmall, Position.Center),
+            WriteLabel("Book Value", widthNormal, Position.Center),
+            WriteLabel("Payout", widthNormal, Position.Center),
+            WriteLabel("Sales Profit", widthNormal, Position.Center),
+            WriteLabel("Return", widthNormal, Position.Center),
             Reset
         );
 
@@ -518,13 +523,13 @@ public static class Methods
         {
             Console.WriteLine(row,
                 Underline,
-                WriteLabel(holding.Key, widthLabel),
-                WriteNumeric(holding.Value.Quantity, widthLabel),
-                WriteNumeric(holding.Value.CostPer(), widthLabel),
-                WriteNumeric(holding.Value.CostTotal, widthLabel),
-                WriteNumeric(holding.Value.Payout, widthLabel),
-                WriteNumeric(holding.Value.SalesProfit, widthLabel),
-                WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, widthLabel),
+                WriteLabel(holding.Key, widthSmall),
+                WriteNumeric(holding.Value.Quantity, widthNormal),
+                WriteNumeric(holding.Value.CostPer(), widthSmall),
+                WriteNumeric(holding.Value.CostTotal, widthNormal),
+                WriteNumeric(holding.Value.Payout, widthNormal),
+                WriteNumeric(holding.Value.SalesProfit, widthNormal),
+                WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, widthNormal),
                 Reset
             );
 
@@ -592,6 +597,20 @@ public static class Methods
                     result[i + leftPadCount] = value[i];
                 }
 
+                break;
+            
+            case Position.Right:
+                int difference = width - value.Length;
+
+                for (int i = value.Length - 1; i > -1; i--)
+                {
+                    result[i + difference] = value[i];
+                }
+
+                for(int i = 0; i < difference; i++)
+                {
+                    result[i] = ' ';
+                }
                 break;
         }
 
