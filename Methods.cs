@@ -18,9 +18,10 @@ public static class Methods
     private const string Reset = "\x1B[0m";
 
     private static readonly string pathData = "";
+    private static readonly string quotesFile;
+    private static readonly string contributionFile;
     private static readonly int widthSmall;
     private static readonly int widthNormal;
-    // private static readonly int widthSeperator;
 
     private static readonly char portfolioSeparatorChar;
     private static readonly int portfolioSeparatorWidth;
@@ -37,7 +38,7 @@ public static class Methods
     private static readonly ConsoleColor holdingSeparatorColor;
     private static readonly ConsoleColor holdingMessageColour;
 
-    private static readonly string quotesFile;
+
 
     private enum Position
     {
@@ -73,7 +74,8 @@ public static class Methods
         Enum.TryParse(config["Holding:separator_colour"] , out holdingSeparatorColor);
         Enum.TryParse(config["Holding:message_colour"], out holdingMessageColour);
 
-        quotesFile =config["General:quotes_file"].TrimEnd();
+        quotesFile = config["General:quotes_file"].TrimEnd();
+        contributionFile = config["General:contribution_file"];
     }
 
     public static string[] GetFiles()
@@ -598,7 +600,7 @@ public static class Methods
                 }
 
                 break;
-            
+
             case Position.Right:
                 int difference = width - value.Length;
 
