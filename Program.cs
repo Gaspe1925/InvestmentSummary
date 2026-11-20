@@ -26,5 +26,5 @@ Dictionary<string, decimal> quotes = await getQuotes;
 List<Portfolio> portfolios = (await Task.WhenAll(tasks)).ToList();
 
 Methods.UpdateMarketPrice(portfolios, quotes);
-Methods.WritePortfolios(portfolios);
+Writer.WritePortfolios(portfolios);
 Console.Read();

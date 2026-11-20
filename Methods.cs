@@ -14,74 +14,25 @@ public static class Methods
     private const string Interest = "INT";
     private const string Exchange = "EXCHANGE";
     private const string Transfer = "TRANSFER";
-    private const string Underline = "\x1B[4m";
-    private const string Reset = "\x1B[0m";
-
-    private static readonly string pathData = "";
-    private static readonly string quotesFile;
-    private static readonly string contributionFile;
-    private static readonly int widthSmall;
-    private static readonly int widthNormal;
-
-    private static readonly char portfolioSeparatorChar;
-    private static readonly int portfolioSeparatorWidth;
-    private static readonly ConsoleColor portfolioSeparatorColor;
-    private static readonly ConsoleColor portfolioMessageColour;
-
-    private static readonly char investmentSeparatorChar;
-    private static readonly int investmentSeparatorWidth;
-    private static readonly ConsoleColor investmentSeparatorColor;
-    private static readonly ConsoleColor investmentMessageColour;
-
-    private static readonly char holdingSeparatorChar;
-    private static readonly int holdingSeparatorWidth;
-    private static readonly ConsoleColor holdingSeparatorColor;
-    private static readonly ConsoleColor holdingMessageColour;
 
 
-
-    private enum Position
-    {
-        Left,
-        Center,
-        Right
-    }
-
+    private static readonly string PathData;
+    private static readonly string QuotesFile;
+    private static readonly string ContributionFile;
+    
     static Methods()
     {
-        string pathConfig = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"config.ini");
-        IConfigurationRoot config = new ConfigurationBuilder()
-            .AddIniFile(pathConfig, optional: false, reloadOnChange: false)
-            .Build();
+        IConfigurationRoot config = ConfigFactory.Create();
 
-        pathData = config["General:directory"].TrimEnd();
-        int.TryParse(config["General:width_small"], out widthSmall);
-        int.TryParse(config["General:width_normal"], out widthNormal);
-        // int.TryParse(config["Settings:width_separator"], out widthSeperator);
-
-        portfolioSeparatorChar = config["Portfolio:separator_char"][0];
-        int.TryParse(config["Portfolio:separator_width"], out portfolioSeparatorWidth);
-        Enum.TryParse(config["Portfolio:separator_colour"] , out portfolioSeparatorColor);
-        Enum.TryParse(config["Portfolio:message_colour"], out portfolioMessageColour);
-
-        investmentSeparatorChar = config["Investment:separator_char"][0];
-        int.TryParse(config["Investment:separator_width"], out investmentSeparatorWidth);
-        Enum.TryParse(config["Investment:separator_colour"] , out investmentSeparatorColor);
-        Enum.TryParse(config["Investment:message_colour"] , out investmentMessageColour);
-
-        holdingSeparatorChar = config["Holding:separator_char"][0];
-        int.TryParse(config["Holding:separator_width"], out holdingSeparatorWidth);
-        Enum.TryParse(config["Holding:separator_colour"] , out holdingSeparatorColor);
-        Enum.TryParse(config["Holding:message_colour"], out holdingMessageColour);
-
-        quotesFile = config["General:quotes_file"].TrimEnd();
-        contributionFile = config["General:contribution_file"];
+        PathData = config["General:directory"].TrimEnd();
+        QuotesFile = config["General:quotes_file"].TrimEnd();
+        ContributionFile = config["General:contribution_file"];
     }
 
     public static string[] GetFiles()
     {
         string[] results = new string[0];
-        results = Directory.GetFiles(pathData, "*csv");
+        results = Directory.GetFiles(PathData, "*csv");
         return results;
     }
 
@@ -89,7 +40,7 @@ public static class Methods
     {
         Dictionary<string, decimal> quotes = new Dictionary<string, decimal>();
 
-        using (StreamReader reader = new StreamReader(quotesFile))
+        using (StreamReader reader = new StreamReader(QuotesFile))
         {
             string row;
             string stock;
@@ -347,276 +298,4 @@ public static class Methods
 
         return result;
     }
-
-    private static void WriteHeader(string message,char c, int repeat,
-        ConsoleColor lineColour = ConsoleColor.White,
-        ConsoleColor messageColour = ConsoleColor.White,
-        bool upperCase = false)
-    {
-        Console.ForegroundColor = lineColour;
-        WriteSeparator(c, repeat);
-
-        Console.ForegroundColor = messageColour;
-        if (upperCase)
-        {
-            Console.WriteLine(message.ToUpper());
-        }
-        else
-        {
-            Console.WriteLine(message);
-        }
-
-        Console.ForegroundColor = lineColour;
-        WriteSeparator(c, repeat);
-        Console.ResetColor();
-    }
-
-    public static void WriteSeparator(char c, int repeat)
-    {
-        string result = string.Empty;
-        for (int i = 0; i < repeat; i++)
-        {
-            result += c;
-        }
-        Console.WriteLine(result);
-
-    }
-
-    public static void WritePortfolios(List<Portfolio> portfolios)
-    {
-        foreach(var portfolio in portfolios)
-        {
-
-            WriteHeader($"    {portfolio.Name}",
-                portfolioSeparatorChar,
-                portfolioSeparatorWidth,
-                portfolioSeparatorColor,
-                portfolioMessageColour, true);
-
-            WriteInvestment(portfolio);
-            Console.WriteLine();
-        }
-    }
-
-    private static void WriteInvestment(Portfolio portfolio)
-    {
-
-        string output = "";
-        foreach (var investment in portfolio.InvestmentByCurrency)
-        {
-
-            WriteHeader($"    Currency {investment.Key}", investmentSeparatorChar, investmentSeparatorWidth,
-                investmentSeparatorColor,
-                investmentMessageColour,
-                false
-            );
-
-            decimal deposits = investment.Value.Contributions.Sum(x => x.Value.Deposit);
-            decimal withdrwals = investment.Value.Contributions.Sum(x => x.Value.Withdrawal);
-            decimal netDeposits = deposits + withdrwals;
-            decimal cash = investment.Value.Cash;
-            decimal profits = investment.Value.Holdings.Sum(x => x.Value.SalesProfit);
-            decimal payouts = investment.Value.Holdings.Sum(x => x.Value.Payout);
-            decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
-
-            output = "    {0} {1}";
-            Console.WriteLine(output, WriteLabel("Deposits", widthNormal), WriteNumeric(deposits, widthNormal));
-            Console.WriteLine(output, WriteLabel("Withdrawal", widthNormal), WriteNumeric(withdrwals, widthNormal));
-            Console.WriteLine(output, WriteLabel("Net Deposits", widthNormal), WriteNumeric(netDeposits, widthNormal));
-            Console.WriteLine();
-
-            Console.WriteLine(output, WriteLabel("Payouts", widthNormal),WriteNumeric(payouts, widthNormal));
-            Console.WriteLine(output, WriteLabel("Sales Profits", widthNormal), WriteNumeric(profits, widthNormal));
-            Console.WriteLine();
-
-            Console.WriteLine(output, WriteLabel("Book Value", widthNormal), WriteNumeric(bookValue, widthNormal));
-            Console.WriteLine(output, WriteLabel("Cash", widthNormal), WriteNumeric(cash, widthNormal));
-            Console.WriteLine();
-
-            WriteHoldings(investment.Value.Holdings);
-
-        }
-    }
-
-    private static void WriteHoldings(Dictionary<string, Holding> holdings)
-    {
-        IEnumerable<KeyValuePair<string, Holding>> aboveZero = holdings.Where(x => x.Value.Quantity > 0).OrderBy(x=> x.Key);
-        IEnumerable<KeyValuePair<string, Holding>> belowZero = holdings.Where(x => x.Value.Quantity <= 0).OrderBy(x=> x.Key);
-
-        if (aboveZero.Count() > 0)
-        {
-            // WriteHeader("    Current Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
-            WriteTableHoldingCurrent(aboveZero);
-        }
-
-        if(belowZero.Count()> 0)
-        {
-            // WriteHeader("    Past Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
-            WriteTableHoldingPrevious(belowZero);
-        }
-
-    }
-
-    private static void WriteTableHoldingCurrent(IEnumerable<KeyValuePair<string, Holding>> holdings)
-    {
-        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}{12}_";
-        string header = template.Replace('_',' ');
-        string row = template.Replace('_', '|');
-
-        Console.WriteLine(header,
-            Underline,
-            WriteLabel("Name", widthSmall, Position.Center),
-            WriteLabel("Quantity", widthNormal, Position.Center),
-            WriteLabel("Cost Per", widthSmall, Position.Center),
-            WriteLabel("Book Value", widthNormal, Position.Center),
-            WriteLabel("Market Value", widthNormal, Position.Center),
-            WriteLabel("Open Profit", widthNormal, Position.Center),
-            WriteLabel("%", widthSmall, Position.Center),
-            WriteLabel("Payout", widthNormal, Position.Center),
-            WriteLabel("Sales Profit", widthNormal, Position.Center),
-            WriteLabel("Return", widthNormal, Position.Center),
-            WriteLabel("%", widthSmall, Position.Center),
-            Reset
-        );
-
-        foreach (var holding in holdings)
-        {
-            Console.WriteLine(row,
-                Underline,
-                WriteLabel(holding.Key, widthSmall),
-                WriteNumeric(holding.Value.Quantity, widthNormal),
-                WriteNumeric(holding.Value.CostPer(), widthSmall),
-                WriteNumeric(holding.Value.CostTotal, widthNormal),
-                WriteNumeric(holding.Value.MarketValue(), widthNormal),
-                WriteNumeric(holding.Value.OpenProfit(), widthNormal),
-                WriteLabel($"{holding.Value.MarketValue() / holding.Value.CostTotal - 1:P1}",
-                    widthSmall, Position.Right),
-                WriteNumeric(holding.Value.Payout, widthNormal),
-                WriteNumeric(holding.Value.SalesProfit, widthNormal),
-                WriteNumeric(holding.Value.TotalProfit(), widthNormal),
-                WriteLabel($"{holding.Value.TotalValue() / holding.Value.CostTotal - 1:P1}", widthSmall,
-                    Position.Right),
-                Reset
-            );
-        }
-
-        Console.WriteLine();
-    }
-
-    private static void WriteTableHoldingPrevious(IEnumerable<KeyValuePair<string, Holding>> holdings)
-    {
-        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}{8}_";
-        string header = template.Replace('_',' ');
-        string row = template.Replace('_', '|');
-
-        Console.WriteLine(header,
-            Underline,
-            WriteLabel("Name", widthSmall, Position.Center),
-            WriteLabel("Quantity", widthNormal, Position.Center),
-            WriteLabel("Cost Per", widthSmall, Position.Center),
-            WriteLabel("Book Value", widthNormal, Position.Center),
-            WriteLabel("Payout", widthNormal, Position.Center),
-            WriteLabel("Sales Profit", widthNormal, Position.Center),
-            WriteLabel("Return", widthNormal, Position.Center),
-            Reset
-        );
-
-        foreach (var holding in holdings)
-        {
-            Console.WriteLine(row,
-                Underline,
-                WriteLabel(holding.Key, widthSmall),
-                WriteNumeric(holding.Value.Quantity, widthNormal),
-                WriteNumeric(holding.Value.CostPer(), widthSmall),
-                WriteNumeric(holding.Value.CostTotal, widthNormal),
-                WriteNumeric(holding.Value.Payout, widthNormal),
-                WriteNumeric(holding.Value.SalesProfit, widthNormal),
-                WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, widthNormal),
-                Reset
-            );
-
-        }
-
-        Console.WriteLine();
-    }
-
-    private static string WriteNumeric<T>(T value, int width) where T : INumber<T>
-    {
-
-        char[] result = new char[width];
-        string valueAsString = value.ToString();
-
-        if(typeof(T) == typeof(decimal))
-        {
-            IFormattable formattable = value;
-            valueAsString = ((decimal)formattable).ToString("N2");
-        }
-
-        if (valueAsString.Length > width) { throw new Exception("Can not write numeric value is too wide"); }
-
-        int difference = width - valueAsString.Length;
-
-        for (int i = valueAsString.Length - 1; i > -1; i--)
-        {
-            result[i + difference] = valueAsString[i];
-        }
-
-        for(int i = 0; i < difference; i++)
-        {
-            result[i] = ' ';
-        }
-
-        return new string(result);
-    }
-
-    private static string WriteLabel(string value, int width, Position position = Position.Left)
-    {
-        if (value.Length > width) { throw new Exception("Can not write label value is too wide"); }
-        char[] result = new char[width];
-
-        switch (position)
-        {
-            case Position.Left:
-                for (int i = 0; i < value.Length; i++)
-                {
-                    result[i] = value[i];
-                }
-                for (int i = value.Length; i < width; i++)
-                {
-                    result[i] = ' ';
-                }
-                break;
-
-            case Position.Center:
-                int leftPadCount = (width - value.Length) / 2;
-                for (int i = 0; i < width; i++)
-                {
-                    result[i] = ' ';
-                }
-
-                for (int i = 0; i < value.Length; i++)
-                {
-                    result[i + leftPadCount] = value[i];
-                }
-
-                break;
-
-            case Position.Right:
-                int difference = width - value.Length;
-
-                for (int i = value.Length - 1; i > -1; i--)
-                {
-                    result[i + difference] = value[i];
-                }
-
-                for(int i = 0; i < difference; i++)
-                {
-                    result[i] = ' ';
-                }
-                break;
-        }
-
-        return new string(result);
-    }
-
 }
