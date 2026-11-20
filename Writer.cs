@@ -124,18 +124,18 @@ public static class Writer
             decimal payouts = investment.Value.Holdings.Sum(x => x.Value.Payout);
             decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
 
-            output = $"{Tab}{0}{1}";
-            Console.WriteLine(output, WriteLabel("Deposits", WidthNormal), WriteNumeric(deposits, WidthNormal));
-            Console.WriteLine(output, WriteLabel("Withdrawal", WidthNormal), WriteNumeric(withdrwals, WidthNormal));
-            Console.WriteLine(output, WriteLabel("Net Deposits", WidthNormal), WriteNumeric(netDeposits, WidthNormal));
+            output = "{0}{1}{2}";
+            Console.WriteLine(output, Tab, WriteLabel("Deposits", WidthNormal), WriteNumeric(deposits, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Withdrawal", WidthNormal), WriteNumeric(withdrwals, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Net Deposits", WidthNormal), WriteNumeric(netDeposits, WidthNormal));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Payouts", WidthNormal), WriteNumeric(payouts, WidthNormal));
-            Console.WriteLine(output, WriteLabel("Sales Profits", WidthNormal), WriteNumeric(profits, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Payouts", WidthNormal), WriteNumeric(payouts, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Sales Profits", WidthNormal), WriteNumeric(profits, WidthNormal));
             Console.WriteLine();
 
-            Console.WriteLine(output, WriteLabel("Book Value", WidthNormal), WriteNumeric(bookValue, WidthNormal));
-            Console.WriteLine(output, WriteLabel("Cash", WidthNormal), WriteNumeric(cash, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Book Value", WidthNormal), WriteNumeric(bookValue, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Cash", WidthNormal), WriteNumeric(cash, WidthNormal));
             Console.WriteLine();
 
             WriteHoldings(investment.Value.Holdings);
