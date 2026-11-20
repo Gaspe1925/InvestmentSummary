@@ -5,6 +5,7 @@ namespace InvestmentViewer;
 
 public static class Writer
 {
+    private const string Tab = "    ";
     private const string Underline = "\x1B[4m";
     private const string Reset = "\x1B[0m";
     private static readonly int WidthSmall;
@@ -92,7 +93,7 @@ public static class Writer
     {
         foreach(var portfolio in portfolios)
         {
-            WriteHeader($"    {portfolio.Name}",
+            WriteHeader($"{Tab}{portfolio.Name}",
                 PortfolioSeparatorChar,
                 PortfolioSeparatorWidth,
                 PortfolioSeparatorColor,
@@ -109,7 +110,7 @@ public static class Writer
         string output = "";
         foreach (var investment in portfolio.InvestmentByCurrency)
         {
-            WriteHeader($"    Currency {investment.Key}", InvestmentSeparatorChar, InvestmentSeparatorWidth,
+            WriteHeader($"{Tab}Currency {investment.Key}", InvestmentSeparatorChar, InvestmentSeparatorWidth,
                 InvestmentSeparatorColor,
                 InvestmentMessageColour,
                 false
@@ -123,7 +124,7 @@ public static class Writer
             decimal payouts = investment.Value.Holdings.Sum(x => x.Value.Payout);
             decimal bookValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal);
 
-            output = "    {0} {1}";
+            output = $"{Tab}{0}{1}";
             Console.WriteLine(output, WriteLabel("Deposits", WidthNormal), WriteNumeric(deposits, WidthNormal));
             Console.WriteLine(output, WriteLabel("Withdrawal", WidthNormal), WriteNumeric(withdrwals, WidthNormal));
             Console.WriteLine(output, WriteLabel("Net Deposits", WidthNormal), WriteNumeric(netDeposits, WidthNormal));
