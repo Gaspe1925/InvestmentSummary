@@ -24,6 +24,7 @@ for (int i = 0; i < files.Length; i++)
 
 Dictionary<string, decimal> quotes = await getQuotes;
 List<Portfolio> portfolios = (await Task.WhenAll(tasks)).ToList();
+portfolios.Add(Methods.Merge(portfolios));
 
 Methods.UpdateMarketPrice(portfolios, quotes);
 Writer.WritePortfolios(portfolios);

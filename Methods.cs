@@ -257,6 +257,7 @@ public static class Methods
                 investment.Cash += transaction.Amount;
                 investment.Exchange += transaction.Amount;
                 break;
+            
             case Transfer:
 
                 break;
@@ -264,6 +265,60 @@ public static class Methods
             Default:
                 throw new Exception($"Unknown transaction type in {path} at row {rowCount}");
         }
+    }
+
+    public static Portfolio Merge(List<Portfolio> portfolios)
+    {
+        Portfolio result = new Portfolio();
+        Investment resultCurrency;
+        Contribution resultContribution;
+        Holding resultHolding;
+        
+        result.Name = "Total";
+
+        foreach (var portfolio in portfolios)
+        {
+            foreach(var currency in portfolio.InvestmentByCurrency)
+            {
+                if (result.InvestmentByCurrency.ContainsKey(currency.Key) == false)
+                {
+                    result.InvestmentByCurrency.Add(currency.Key, new Investment());
+                }
+
+                resultCurrency = result.InvestmentByCurrency[currency.Key];
+                resultCurrency.Cash += currency.Value.Cash;
+                resultCurrency.Exchange += currency.Value.Exchange;
+                
+                foreach (var contribution in currency.Value.Contributions)
+                {
+                    if (resultCurrency.Contributions.ContainsKey(contribution.Key) == false)
+                    {
+                        resultCurrency.Contributions.Add(contribution.Key, new Contribution());
+                    }
+
+                    resultContribution = result.InvestmentByCurrency[currency.Key].Contributions[contribution.Key];
+                    resultContribution.Deposit += contribution.Value.Deposit;
+                    resultContribution.Withdrawal += contribution.Value.Withdrawal;
+                }
+
+                foreach (var holding in currency.Value.Holdings)
+                {
+                    if (resultCurrency.Holdings.ContainsKey(holding.Key) == false)
+                    {
+                        resultCurrency.Holdings.Add(holding.Key, new Holding());
+                    }
+                    
+                    resultHolding = resultCurrency.Holdings[holding.Key];
+                    resultHolding.Quantity += holding.Value.Quantity;
+                    resultHolding.CostTotal += holding.Value.CostTotal;
+                    resultHolding.Payout += holding.Value.Payout;
+                    resultHolding.SalesProfit += holding.Value.SalesProfit;
+                }
+                
+            }
+        }
+
+        return result;
     }
 
     private static int ParseInt(string value, string path, int rowCount)
@@ -299,3 +354,4 @@ public static class Methods
         return result;
     }
 }
+
