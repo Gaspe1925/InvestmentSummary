@@ -25,14 +25,14 @@ public static class Writer
     private static readonly int HoldingSeparatorWidth;
     private static readonly ConsoleColor HoldingSeparatorColor;
     private static readonly ConsoleColor HoldingMessageColour;
-    
+
     private enum Position
     {
         Left,
         Center,
         Right
     }
-    
+
     static Writer()
     {
         IConfigurationRoot config = ConfigFactory.Create();
@@ -106,7 +106,6 @@ public static class Writer
 
     private static void WriteInvestment(Portfolio portfolio)
     {
-
         string output = "";
         foreach (var investment in portfolio.InvestmentByCurrency)
         {
@@ -176,8 +175,17 @@ public static class Writer
         foreach (var holding in holdings)
         {
             Console.WriteLine(row,
-                Underline, WriteLabel(holding.Key, WidthSmall), WriteNumeric(holding.Value.Quantity, WidthNormal), WriteNumeric(holding.Value.CostPer(), WidthSmall), WriteNumeric(holding.Value.CostTotal, WidthNormal), WriteNumeric(holding.Value.MarketValue(), WidthNormal), WriteNumeric(holding.Value.OpenProfit(), WidthNormal), WriteLabel($"{holding.Value.MarketValue() / holding.Value.CostTotal - 1:P1}",
-                    WidthSmall, Position.Right), WriteNumeric(holding.Value.Payout, WidthNormal), WriteNumeric(holding.Value.SalesProfit, WidthNormal), WriteNumeric(holding.Value.TotalProfit(), WidthNormal), WriteLabel($"{holding.Value.TotalValue() / holding.Value.CostTotal - 1:P1}", WidthSmall,
+                Underline,
+                WriteLabel(holding.Key, WidthSmall),
+                WriteNumeric(holding.Value.Quantity, WidthNormal),
+                WriteLabel(holding.Value.CostPer().ToString("N4"), WidthSmall,Position.Right),
+                WriteNumeric(holding.Value.CostTotal, WidthNormal),
+                WriteNumeric(holding.Value.MarketValue(), WidthNormal),
+                WriteNumeric(holding.Value.OpenProfit(), WidthNormal),
+                WriteLabel($"{holding.Value.MarketValue() / holding.Value.CostTotal - 1:P1}",
+                    WidthSmall, Position.Right), WriteNumeric(holding.Value.Payout, WidthNormal),
+                WriteNumeric(holding.Value.SalesProfit, WidthNormal), WriteNumeric(holding.Value.TotalProfit(), WidthNormal),
+                WriteLabel($"{holding.Value.TotalValue() / holding.Value.CostTotal - 1:P1}", WidthSmall,
                     Position.Right),
                 Reset
             );
@@ -193,14 +201,26 @@ public static class Writer
         string row = template.Replace('_', '|');
 
         Console.WriteLine(header,
-            Underline, WriteLabel("Name", WidthSmall, Position.Center), WriteLabel("Quantity", WidthNormal, Position.Center), WriteLabel("Cost Per", WidthSmall, Position.Center), WriteLabel("Book Value", WidthNormal, Position.Center), WriteLabel("Payout", WidthNormal, Position.Center), WriteLabel("Sales Profit", WidthNormal, Position.Center), WriteLabel("Return", WidthNormal, Position.Center),
+            Underline, WriteLabel("Name", WidthSmall, Position.Center), 
+            WriteLabel("Quantity", WidthNormal, Position.Center), 
+            WriteLabel("Cost Per", WidthSmall, Position.Center), 
+            WriteLabel("Book Value", WidthNormal, Position.Center), 
+            WriteLabel("Payout", WidthNormal, Position.Center), 
+            WriteLabel("Sales Profit", WidthNormal, Position.Center), 
+            WriteLabel("Return", WidthNormal, Position.Center),
             Reset
         );
 
         foreach (var holding in holdings)
         {
             Console.WriteLine(row,
-                Underline, WriteLabel(holding.Key, WidthSmall), WriteNumeric(holding.Value.Quantity, WidthNormal), WriteNumeric(holding.Value.CostPer(), WidthSmall), WriteNumeric(holding.Value.CostTotal, WidthNormal), WriteNumeric(holding.Value.Payout, WidthNormal), WriteNumeric(holding.Value.SalesProfit, WidthNormal), WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, WidthNormal),
+                Underline, WriteLabel(holding.Key, WidthSmall), 
+                WriteNumeric(holding.Value.Quantity, WidthNormal), 
+                WriteNumeric(holding.Value.CostPer(), WidthSmall), 
+                WriteNumeric(holding.Value.CostTotal, WidthNormal), 
+                WriteNumeric(holding.Value.Payout, WidthNormal), 
+                WriteNumeric(holding.Value.SalesProfit, WidthNormal), 
+                WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, WidthNormal),
                 Reset
             );
 
