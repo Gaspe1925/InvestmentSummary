@@ -47,17 +47,17 @@ public class Holding
 
     public decimal OpenProfit()
     {
+        if (MarketValue() == 0)
+        {
+            return 0;
+        }
+        
         return MarketValue() - CostTotal;
     }
 
     public decimal TotalProfit()
     {
         return OpenProfit() + SalesProfit + Payout;
-    }
-
-    public decimal TotalValue()
-    {
-        return MarketValue() + SalesProfit + Payout;
     }
 }
 

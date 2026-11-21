@@ -134,41 +134,74 @@ public static class Writer
             Console.WriteLine();
 
             Console.WriteLine(output, Tab, WriteLabel("Book Value", WidthNormal), WriteNumeric(bookValue, WidthNormal));
+            Console.WriteLine(output, Tab, WriteLabel("Market Value", WidthNormal), 
+                WriteLabel(investment.Value.Holdings.Sum(x=> x.Value.MarketValue()).ToString("N2"), 
+                    WidthNormal, Position.Right));
+            Console.WriteLine(output, Tab, WriteLabel("Open Profit", WidthNormal), 
+                WriteNumeric(investment.Value.Holdings.Sum(x=> x.Value.OpenProfit()), WidthNormal));
+            Console.WriteLine();
+            
             Console.WriteLine(output, Tab, WriteLabel("Cash", WidthNormal), WriteNumeric(cash, WidthNormal));
             Console.WriteLine();
 
-            WriteHoldings(investment.Value.Holdings);
+            decimal totalValue = investment.Value.Holdings.Sum(x => x.Value.CostTotal)
+                                 + investment.Value.Holdings.Sum(x => x.Value.OpenProfit())
+                                 + investment.Value.Cash;
+                                     
+            decimal percentage = 0;
+            if (investment.Value.Contributions.Values.Sum(x => x.Deposit) > 0)
+            {
+                percentage = totalValue / investment.Value.Contributions.Sum(x => x.Value.Deposit) -1;
+            }
+            
+            Console.WriteLine(output, Tab, WriteLabel("Total Value", WidthNormal),
+                WriteNumeric(
+                    totalValue,
+                    WidthNormal) 
+            );
+            
+            Console.WriteLine(output, Tab, WriteLabel("%", WidthNormal), WriteLabel( percentage.ToString("P1"), WidthNormal, Position.Right) );
+            Console.WriteLine();
+            
+
+            WriteHoldings(investment.Value);
 
         }
     }
 
-    private static void WriteHoldings(Dictionary<string, Holding> holdings)
+    private static void WriteHoldings(Investment investment)
     {
+        Dictionary<string, Holding> holdings = investment.Holdings;
         IEnumerable<KeyValuePair<string, Holding>> aboveZero = holdings.Where(x => x.Value.Quantity > 0).OrderBy(x=> x.Key);
-        IEnumerable<KeyValuePair<string, Holding>> belowZero = holdings.Where(x => x.Value.Quantity <= 0).OrderBy(x=> x.Key);
-
+        
         if (aboveZero.Count() > 0)
         {
-            // WriteHeader("    Current Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
             WriteTableHoldingCurrent(aboveZero);
         }
 
-        if(belowZero.Count()> 0)
+        if(holdings.Count() > 0)
         {
-            // WriteHeader("    Past Holdings", holdingSeparatorChar, holdingSeparatorWidth, holdingSeparatorColor, holdingMessageColour, false);
-            WriteTableHoldingPrevious(belowZero);
+            WriteTableHoldings(investment);
         }
 
     }
 
     private static void WriteTableHoldingCurrent(IEnumerable<KeyValuePair<string, Holding>> holdings)
     {
-        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}{12}_";
+        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}{9}";
         string header = template.Replace('_',' ');
         string row = template.Replace('_', '|');
 
         Console.WriteLine(header,
-            Underline, WriteLabel("Name", WidthSmall, Position.Center), WriteLabel("Quantity", WidthNormal, Position.Center), WriteLabel("Cost Per", WidthSmall, Position.Center), WriteLabel("Book Value", WidthNormal, Position.Center), WriteLabel("Market Value", WidthNormal, Position.Center), WriteLabel("Open Profit", WidthNormal, Position.Center), WriteLabel("%", WidthSmall, Position.Center), WriteLabel("Payout", WidthNormal, Position.Center), WriteLabel("Sales Profit", WidthNormal, Position.Center), WriteLabel("Return", WidthNormal, Position.Center), WriteLabel("%", WidthSmall, Position.Center),
+            Underline, 
+            WriteLabel("Name", WidthSmall, Position.Center), 
+            WriteLabel("Quantity", WidthNormal, Position.Center), 
+            WriteLabel("Cost Per", WidthSmall, Position.Center), 
+            WriteLabel("Market Value", WidthNormal, Position.Center),
+            WriteLabel("Book Value", WidthNormal, Position.Center), 
+            WriteLabel("Market Value", WidthNormal, Position.Center), 
+            WriteLabel("Open Profit", WidthNormal, Position.Center), 
+            WriteLabel("%", WidthSmall, Position.Center), 
             Reset
         );
 
@@ -178,15 +211,13 @@ public static class Writer
                 Underline,
                 WriteLabel(holding.Key, WidthSmall),
                 WriteNumeric(holding.Value.Quantity, WidthNormal),
-                WriteLabel(holding.Value.CostPer().ToString("N4"), WidthSmall,Position.Right),
+                WriteLabel(holding.Value.CostPer().ToString("N2"), WidthSmall,Position.Right),
+                WriteLabel(holding.Value.MarketPrice.ToString("N2"), WidthNormal, Position.Right),
                 WriteNumeric(holding.Value.CostTotal, WidthNormal),
                 WriteNumeric(holding.Value.MarketValue(), WidthNormal),
                 WriteNumeric(holding.Value.OpenProfit(), WidthNormal),
                 WriteLabel($"{holding.Value.MarketValue() / holding.Value.CostTotal - 1:P1}",
-                    WidthSmall, Position.Right), WriteNumeric(holding.Value.Payout, WidthNormal),
-                WriteNumeric(holding.Value.SalesProfit, WidthNormal), WriteNumeric(holding.Value.TotalProfit(), WidthNormal),
-                WriteLabel($"{holding.Value.TotalValue() / holding.Value.CostTotal - 1:P1}", WidthSmall,
-                    Position.Right),
+                    WidthSmall, Position.Right), 
                 Reset
             );
         }
@@ -194,9 +225,11 @@ public static class Writer
         Console.WriteLine();
     }
 
-    private static void WriteTableHoldingPrevious(IEnumerable<KeyValuePair<string, Holding>> holdings)
+    private static void WriteTableHoldings(Investment investment)
     {
-        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}{8}_";
+        Dictionary<string, Holding> holdings = investment.Holdings;
+        
+        string template= "_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}{10}_";
         string header = template.Replace('_',' ');
         string row = template.Replace('_', '|');
 
@@ -206,13 +239,21 @@ public static class Writer
             WriteLabel("Cost Per", WidthSmall, Position.Center), 
             WriteLabel("Book Value", WidthNormal, Position.Center), 
             WriteLabel("Payout", WidthNormal, Position.Center), 
-            WriteLabel("Sales Profit", WidthNormal, Position.Center), 
-            WriteLabel("Return", WidthNormal, Position.Center),
+            WriteLabel("Sales Profit", WidthNormal, Position.Center),
+            WriteLabel("Open Profit", WidthNormal, Position.Center),
+            WriteLabel("Total Profit", WidthNormal, Position.Center),
+            WriteLabel("%", WidthSmall, Position.Center),
             Reset
         );
 
         foreach (var holding in holdings)
         {
+            decimal percentage = 0;
+            if (investment.Contributions.Sum(x => x.Value.Deposit) > 0)
+            {
+                percentage = (holding.Value.TotalProfit() / investment.Contributions.Sum(x => x.Value.Deposit));
+            }
+            
             Console.WriteLine(row,
                 Underline, WriteLabel(holding.Key, WidthSmall), 
                 WriteNumeric(holding.Value.Quantity, WidthNormal), 
@@ -220,7 +261,9 @@ public static class Writer
                 WriteNumeric(holding.Value.CostTotal, WidthNormal), 
                 WriteNumeric(holding.Value.Payout, WidthNormal), 
                 WriteNumeric(holding.Value.SalesProfit, WidthNormal), 
-                WriteNumeric(holding.Value.SalesProfit + holding.Value.Payout, WidthNormal),
+                WriteNumeric(holding.Value.OpenProfit(), WidthNormal),
+                WriteNumeric(holding.Value.TotalProfit(), WidthNormal),
+                WriteLabel(percentage.ToString("P1") , WidthSmall, Position.Center),
                 Reset
             );
 
